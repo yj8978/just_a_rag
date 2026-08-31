@@ -11,13 +11,24 @@ def load_documents():
 
     return documents
 
+def chunk_text(text,overlap = 5 ,chunk_size=100):
+    chunks = []
+    for i in range(0,len(text),chunk_size):    ##start, stop, step
+        chunk = text [i - overlap :i + chunk_size]
+        chunks.append(chunk)
+
+    return chunks
+
 
 if __name__ == "__main__":
     documents = load_documents()
     for file in documents:
+        chunks = chunk_text(file['text'])
         print("~"*7**2)
         print(file['filename'])
-        print(file['text'])
+        for i, chunk in enumerate(chunks):
+            print(f"`````Chunk {i}`````")
+            print(chunk)
 
 
 
