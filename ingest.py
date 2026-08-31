@@ -1,6 +1,7 @@
 from pathlib import Path
 
-DOCUMENTS_PATH = Path('documents')
+BASE_DIR = Path(__file__).parent
+DOCUMENTS_PATH = BASE_DIR / 'documents'
 
 def load_documents():
     documents = []  ##init a list named documents
