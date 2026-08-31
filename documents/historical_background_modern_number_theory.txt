@@ -1,0 +1,17 @@
+The period 1800 to 1840 saw great advances in number theory as the subject
+developedacoherenceandmoved towardthekindofalgebraicnumbertheory that
+is studied today. The groundwork had been laid chiefly by Euclid, Diophantus,
+Fermat, Euler, Lagrange, and Legendre. Some of what those people did was
+remarkably insightful for its time, but what collectively had come out of their
+labors was more a collection of miscellaneous results than an organized theory.
+It was Gauss who first gave direction and depth to the subject, beginning with
+his book Disquisitiones Arithmeticae in 1801. Dirichlet built on Gauss’s work,
+clarifying the deeper parts and adding analytic techniques that pointed toward
+the integrated subject of the future. This chapter concentrates on three jewels of
+classical number theory—largely the work of Gauss and Dirichlet—that seem on
+the surface to be only peripherally related but are actually a natural succession
+of developments leading from earlier results toward modern algebraic number
+theory. To understand the context, it is necessary to back up for a moment.
+Diophantineequations in two or more variables have always lain at the heart of
+number theory. Fundamental examples that have played an important role in the
+development of the subject area x**2+bxy+cy**2 = m for unknown integers x and y;

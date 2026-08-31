@@ -1,0 +1,14 @@
+Python is a high-level programming language used for general-purpose programming.
+
+Python functions are reusable blocks of code. A function is defined using the def keyword.
+
+For example, a function can be defined like this:
+
+def greet(name):
+    return "Hello " + name
+
+Python functions can accept parameters and return values.
+
+Python classes are used to create objects. A class can contain attributes and methods.
+
+Inheritance allows one class to reuse functionality from another class.
