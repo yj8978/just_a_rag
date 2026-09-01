@@ -1,5 +1,6 @@
 import chromadb
 from sentence_transformers import SentenceTransformer
+from ollama import chat
 
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 chroma_client = chromadb.PersistentClient(path="data/chroma_db")
@@ -13,10 +14,31 @@ def search(query,top_k=3):                 ##two parameters: query and top_k whi
     )
     return results
 
+def generate_response(query,results):
+    context = "\n".join(results["documents"][0])
+    print("Context:", context)
+    prompt = f"""
+    Context: {context}
+    Question: {query}
+    Answer:
+    """
+    response = chat(model="qwen3:8b",
+                    messages=[{"role": "system",
+                                "content": "Answer the question using the provided context only. If the answer is not contained within the context, say 'I don't know'."},
+                              {"role": "user",
+                                "content": prompt}])
+    return response['message']['content']
+
 
 if __name__ == "__main__":
-    query = "What is Number theory?"
+    inp = input("Enter your question:")
+    print(inp)
+    query = inp
     results = search(query)
-    for document in results["documents"][0]:
-        print("=" * 50)
-        print(document)
+    print("Results:", results)
+    answer = generate_response(query,results)
+    print("Answer:", answer)
+
+    # for document in results["documents"][0]:
+    #     print("=" * 50)
+    #     print(document)
