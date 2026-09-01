@@ -1,5 +1,5 @@
 The period 1800 to 1840 saw great advances in number theory as the subject
-developedacoherenceandmoved towardthekindofalgebraicnumbertheory that
+developed a coherence and moved toward the kind of algebraic number theory that
 is studied today. The groundwork had been laid chiefly by Euclid, Diophantus,
 Fermat, Euler, Lagrange, and Legendre. Some of what those people did was
 remarkably insightful for its time, but what collectively had come out of their
