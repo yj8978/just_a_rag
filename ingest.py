@@ -3,9 +3,6 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import nltk
-import numpy as np
-
-
 
 BASE_DIR = Path(__file__).parent
 DOCUMENTS_PATH = BASE_DIR / 'documents'
@@ -13,6 +10,7 @@ nltk.download("punkt_tab")  ##downloads the punkt tokenizer models for sentence 
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 tokenizer = embedding_model.tokenizer
 chroma_client = chromadb.PersistentClient(path="data/chroma_db")
+chroma_client.delete_collection("documents")
 collection = chroma_client.get_or_create_collection(name="documents")
 
 def load_documents():
@@ -23,19 +21,11 @@ def load_documents():
 
     return documents
 
-# def chunk_text(text,overlap = 50 ,chunk_size=500):
-#     chunks = []
-#     for i in range(0,len(text),chunk_size):    ##start, stop, step
-#         chunk = text [i - overlap :i + chunk_size]
-#         chunks.append(chunk)
-
-#     return chunks
-
 def count_tokens(text):
     return len(tokenizer.encode(text,add_special_tokens = False))
 
 
-def chunk_text(text,threshold=0.6,max_tokens=500):
+def chunk_text(text,threshold=0.9,max_tokens=500):
     sentences = nltk.sent_tokenize(text)
     if not sentences:
         return []
@@ -54,7 +44,7 @@ def chunk_text(text,threshold=0.6,max_tokens=500):
             current_tokens = sentence_tokens
             continue
 
-        similarity = np.dot(sentence_embeddings[i - 1],sentence_embeddings[i])
+        similarity = cosine_similarity([sentence_embeddings[i - 1]], [sentence_embeddings[i]])[0][0]    
 
         semantic_break = similarity < threshold
 
@@ -71,8 +61,10 @@ def chunk_text(text,threshold=0.6,max_tokens=500):
     if current_chunk:
         chunks.append(" ".join(current_chunk))
 
-    return chunks
+    for chunk in chunks:
+        print(f"Chunk: {chunk}\nToken Count: {count_tokens(chunk)}\n{'-'*50}")
 
+    return chunks
 
 def ingest():
     documents = load_documents()
@@ -85,18 +77,11 @@ def ingest():
                       "chunk_index":i,
                       "token_count":count_tokens(chunk) }
                       for i,chunk in enumerate(chunks)]
-        print(metadatas)
 
         collection.add(ids=ids,documents=chunks,embeddings=embeddings.tolist(),
                        metadatas=metadatas,)
 
     print("Documents ingested successfully")
-        # print("~"*7**2)
-        # print(file['filename'])
-
-        # for i, chunk in enumerate(chunks):
-        #     print(f"`````Chunk {i}`````")
-        #     print(chunk)
 
 
 if __name__ == "__main__":

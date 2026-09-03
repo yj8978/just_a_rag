@@ -37,7 +37,3 @@ if __name__ == "__main__":
     results = search(query)          ##returns and stores the list of most relevant chunks
     answer = generate_response(query,results)
     print("Answer:", answer)
-
-    # for document in results["documents"][0]:
-    #     print("=" * 50)
-    #     print(document)
