@@ -1,88 +1,120 @@
-from pathlib import Path
 import chromadb
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import nltk
 
-BASE_DIR = Path(__file__).parent
-DOCUMENTS_PATH = BASE_DIR / 'documents'
-nltk.download("punkt_tab")  ##downloads the punkt tokenizer models for sentence splitting and tokenization. It is used by the nltk library to tokenize text into sentences and words.
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-tokenizer = embedding_model.tokenizer
-chroma_client = chromadb.PersistentClient(path="data/chroma_db")
-chroma_client.delete_collection("documents")
-collection = chroma_client.get_or_create_collection(name="documents")
-
-def load_documents():
-    documents = []  ##init a list named documents
-    for fp in DOCUMENTS_PATH.glob("*.txt"):  ## documents/*.txt
-        text =  fp.read_text(encoding = 'utf-8')
-        documents.append({'filename':fp.name,'text':text})
-
-    return documents
-
-def count_tokens(text):
-    return len(tokenizer.encode(text,add_special_tokens = False))
+from config import (
+    DOCUMENTS_PATH,
+    CHROMA_PATH,
+    EMBEDDING_MODEL,
+    COLLECTION_NAME,
+    CHUNK_THRESHOLD,
+    MAX_TOKENS
+)
 
 
-def chunk_text(text,threshold=0.8,max_tokens=500):
-    sentences = nltk.sent_tokenize(text)
-    if not sentences:
-        return []
+class Ingest:
+    def __init__(self):
+        # Embedding model
+        self.embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+        # Tokenizer
+        self.tokenizer = self.embedding_model.tokenizer
+        # ChromaDB
+        self.chroma_client = chromadb.PersistentClient(path=str(CHROMA_PATH))
 
-    sentence_embeddings = embedding_model.encode(sentences,normalize_embeddings=True)
-    chunks = []
-    current_chunk = []
-    current_tokens = 0
+    def load_documents(self):
+        documents = []
+        for fp in DOCUMENTS_PATH.glob("*.txt"):
+            text = fp.read_text(encoding="utf-8")
+            documents.append({
+                "filename": fp.name,
+                "text": text
+            })
 
-    for i, sentence in enumerate(sentences):
-        sentence_tokens = count_tokens(sentence)
+        return documents
 
-        # First sentence
-        if not current_chunk:
-            current_chunk.append(sentence)
-            current_tokens = sentence_tokens
-            continue
+    def count_tokens(self, text):
+        return len(self.tokenizer.encode(text,add_special_tokens=False))
 
-        similarity = cosine_similarity([sentence_embeddings[i - 1]], [sentence_embeddings[i]])[0][0]    
+    def chunk_text(self,text,threshold=CHUNK_THRESHOLD,max_tokens=MAX_TOKENS):
+        sentences = nltk.sent_tokenize(text)
+        if not sentences:
+            return []
 
-        semantic_break = similarity < threshold
+        sentence_embeddings = self.embedding_model.encode(sentences,normalize_embeddings=True)
+        chunks = []
+        current_chunk = []
+        current_tokens = 0
 
-        token_break = (current_tokens + sentence_tokens > max_tokens)
+        for i, sentence in enumerate(sentences):
+            sentence_tokens = self.count_tokens(sentence)
 
-        if semantic_break or token_break:
+            # First sentence
+            if not current_chunk:
+                current_chunk.append(sentence)
+                current_tokens = sentence_tokens
+                continue
+
+            similarity = cosine_similarity([sentence_embeddings[i - 1]],[sentence_embeddings[i]])[0][0]
+            semantic_break = similarity < threshold
+            token_break = (current_tokens + sentence_tokens> max_tokens)
+
+            if semantic_break or token_break:
+                chunks.append(" ".join(current_chunk))
+                current_chunk = [sentence]
+                current_tokens = sentence_tokens
+
+            else:
+                current_chunk.append(sentence)
+                current_tokens += sentence_tokens
+
+        # Add final chunk
+        if current_chunk:
             chunks.append(" ".join(current_chunk))
-            current_chunk = [sentence]
-            current_tokens = sentence_tokens
-        else:
-            current_chunk.append(sentence)
-            current_tokens += sentence_tokens
 
-    if current_chunk:
-        chunks.append(" ".join(current_chunk))
+        return chunks
 
-    for chunk in chunks:
-        print(f"Chunk: {chunk}\nToken Count: {count_tokens(chunk)}\n{'-'*50}")
+    def reset_collection(self):
+        try:
+            self.chroma_client.delete_collection(COLLECTION_NAME)
+            print(f"Collection '{COLLECTION_NAME}' deleted successfully.")
+        except Exception:
+            print(f"Collection '{COLLECTION_NAME}' does not exist or could not be deleted.")
 
-    return chunks
+        self.collection = self.chroma_client.get_or_create_collection(name=COLLECTION_NAME)
 
-def ingest():
-    documents = load_documents()
-    print (documents)
-    for file in documents:
-        chunks = chunk_text(file['text'])
-        embeddings = embedding_model.encode(chunks)     ##creates embeddings for each chunk of text using the embedding model. The encode method converts the text chunks into numerical vectors that can be used for similarity search and retrieval.  
-        ids = [f"{file['filename']}--{i}" for i in range(len(chunks))]
-        metadatas = [{"filename":file['filename'],
-                      "chunk_index":i,
-                      "token_count":count_tokens(chunk) }
-                      for i,chunk in enumerate(chunks)]
+    def ingest(self):
+        self.reset_collection()
+        documents = self.load_documents()
+        print(f"Found {len(documents)} documents.")
+        for file in documents:
+            print(f"\nProcessing: {file['filename']}")
+            chunks = self.chunk_text(file["text"])
+            print(f"Created {len(chunks)} chunks.")
+            embeddings = self.embedding_model.encode(chunks)
+            ids = [f"{file['filename']}--{i}" for i in range(len(chunks))]
+            metadatas = [
+                {
+                    "filename": file["filename"],
+                    "chunk_index": i,
+                    "token_count": self.count_tokens(
+                        chunk
+                    )
+                }
+                for i, chunk in enumerate(chunks)
+            ]
 
-        collection.add(ids=ids,documents=chunks,embeddings=embeddings.tolist(),
-                       metadatas=metadatas,)
+            self.collection.add(
+                ids=ids,
+                documents=chunks,
+                embeddings=embeddings.tolist(),
+                metadatas=metadatas
+            )
 
-    print("Documents ingested successfully")
-
+        print(f"\nDocuments ingested successfully.")
+        print(f"Total chunks in database: {self.collection.count()}")
 
 if __name__ == "__main__":
-    ingest()
+    nltk.download("punkt_tab")
+    ingester = Ingest()
+    ingester.ingest()

@@ -2,16 +2,15 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from ollama import chat
 from pathlib import Path
+import config
 
-BASE_DIR = Path(__file__).parent
-CHROMA_PATH = BASE_DIR / "data" / "chroma_db"
 
 class Rag():
     def __init__(self):
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.chroma_client = chromadb.PersistentClient(path="data/chroma_db")
-        self.collection = self.chroma_client.get_collection(name="documents")
-        self.top_k = 3
+        self.embedding_model = SentenceTransformer(config.EMBEDDING_MODEL)
+        self.chroma_client = chromadb.PersistentClient(path=config.CHROMA_PATH)
+        self.collection = self.chroma_client.get_collection(name=config.COLLECTION_NAME)
+        self.top_k = config.TOP_K
 
     def search(self,query):                 ##two parameters: query and top_k which returns the top_k most result
         query_embedding =  self.embedding_model.encode(query)
@@ -19,13 +18,6 @@ class Rag():
             query_embeddings = [query_embedding.tolist()],
             n_results = self.top_k
         )
-        print("\nFULL RESULTS:")
-        print(results)
-
-        print("\nDOCUMENTS:")
-        print(results["documents"])
-
-    
         return results
 
     def generate_response(self,query,results):
@@ -36,7 +28,7 @@ class Rag():
         Question: {query}
         Answer:
         """
-        response = chat(model="qwen3:8b",
+        response = chat(model=config.LLM_MODEL,
                         messages=[{"role": "system",
                                     "content": "Answer the question using the provided context only. If the answer is not contained within the context, say 'I don't know'."},
                                 {"role": "user",
@@ -50,4 +42,8 @@ class Rag():
         answer = self.generate_response(query,results)
         return answer
 
-
+if __name__ == "__main__":
+    rag = Rag()
+    query = input("Enter your question:")
+    answer = rag.ask(query)
+    print("Answer:", answer)
