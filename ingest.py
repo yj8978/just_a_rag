@@ -25,7 +25,7 @@ def count_tokens(text):
     return len(tokenizer.encode(text,add_special_tokens = False))
 
 
-def chunk_text(text,threshold=0.9,max_tokens=500):
+def chunk_text(text,threshold=0.8,max_tokens=500):
     sentences = nltk.sent_tokenize(text)
     if not sentences:
         return []
