@@ -22,7 +22,6 @@ class Rag():
 
     def generate_response(self,query,results):
         context = "\n".join(results["documents"][0])
-        print("Context:", context)
         prompt = f"""
         Context: {context}
         Question: {query}

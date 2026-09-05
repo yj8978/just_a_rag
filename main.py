@@ -1,11 +1,8 @@
 from ingest import Ingest
 from rag import Rag
 
-
 def main():
-
     while True:
-
         print("\n======================")
         print("       RAG SYSTEM")
         print("======================")

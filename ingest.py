@@ -30,7 +30,6 @@ class Ingest:
                 "filename": fp.name,
                 "text": text
             })
-
         return documents
 
     def count_tokens(self, text):

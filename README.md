@@ -283,14 +283,14 @@ Currently implemented:
 * [x] `.txt` document discovery
 * [x] Reading documents
 * [x] Storing filename + text
+* [x] Document chunking
+* [x] LLM generation
 
 Coming next:
 
-* [ ] Document chunking
 * [ ] Embeddings
 * [ ] Vector search
 * [ ] Retrieval
-* [ ] LLM generation
 * [ ] Complete RAG pipeline
 
 ---
